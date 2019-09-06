@@ -9,38 +9,39 @@ except:
 
 class Portfolio:
     """Portfolio of assets"""
-    def __init__(self, assets):
-        self.assets = assets
+    def __init__(self, assets=None):
+        self.assets = assets or []
 
-    def get_prices(self, start=None, end=None):
+    def get_prices(self, start=None, end=None, rows=None):
         """
-        Download pricing data from quandl
+        Download historical adj.close data from quandl
         ----------
         Parameters
         ----------
         start - starting date
         end - ending date
         """
-        data = quandl.get_table(
-            'WIKI/PRICES',
-            ticker=self.assets,
-            qopts={'columns': ['date', 'ticker', 'adj_close']},
-            date={
-                'gte': start,
-                'lte': end
-            },
-            paginate=True)
-        data.set_index('date', inplace=True)
-        data = data.pivot(columns='ticker')
-        data.columns = [col[1] for col in data.columns]
-        return data.dropna()
+        if not self.assets:
+            return None
+        df = quandl.get(
+            [f'WIKI/{asset}.11' for asset in self.assets],
+            start_date=start,
+            end_date=end,
+            rows=rows
+        )
+        df.columns = self.assets
+        return df.dropna()
 
     def get_returns(self, start=None, end=None):
         prices = self.get_prices(start, end)
+        if prices is None:
+            return None
         return prices.pct_change().dropna()
 
     def get_cum_returns(self, start=None, end=None):
         returns = self.get_returns(start, end)
+        if returns is None:
+            return None
         returns = returns + 1
         return returns.cumprod() * 100
 
