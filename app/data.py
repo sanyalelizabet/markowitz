@@ -33,5 +33,14 @@ def get_tickers():
         return download_tickers()
 
 
+def get_tickers_dict():
+    """Returns dictionary of tickers for using in dash component"""
+    tickers = get_tickers()
+    return [
+        {'label': ticker, 'value': ticker}
+        for ticker in tickers
+    ]
+
+
 if __name__ == '__main__':
     download_tickers()
