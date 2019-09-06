@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import quandl
 
@@ -12,39 +13,54 @@ class Portfolio:
     def __init__(self, assets=None):
         self.assets = assets or []
 
-    def get_prices(self, start=None, end=None, rows=None):
-        """
-        Download historical adj.close data from quandl
-        ----------
-        Parameters
-        ----------
-        start - starting date
-        end - ending date
-        """
-        if not self.assets:
+    def __setattr__(self, name, value):
+        if name == 'assets': # reload prices every time assets are setted
+            self.prices = self.load_prices(value)
+        super().__setattr__(name, value)
+
+    @staticmethod
+    def load_prices(assets, **kwargs):
+        """Download historical prices from Quandl"""
+        if not assets:
             return None
         df = quandl.get(
-            [f'WIKI/{asset}.11' for asset in self.assets],
-            start_date=start,
-            end_date=end,
-            rows=rows
+            [f'WIKI/{asset}.11' for asset in assets],
+            **kwargs
         )
-        df.columns = self.assets
+        df.columns = assets
         return df.dropna()
 
-    def get_returns(self, start=None, end=None):
-        prices = self.get_prices(start, end)
-        if prices is None:
-            return None
-        return prices.pct_change().dropna()
+    @property
+    def returns(self):
+        return self.prices.pct_change().dropna()
 
-    def get_cum_returns(self, start=None, end=None):
-        returns = self.get_returns(start, end)
-        if returns is None:
-            return None
-        returns = returns + 1
+    @property
+    def cum_returns(self):
+        returns = self.returns + 1
         return returns.cumprod() * 100
 
+    def random_weights(self):
+        """Generate random weights for portfolio assets"""
+        k = np.random.random(len(self.assets))
+        return k / sum(k)
+
+    def random_mu_sigma(self):
+        """Calculate mu and sigma for portfolio with random weights"""
+        returns = self.returns
+
+        p = returns.mean().values
+        w = self.random_weights()
+        C = returns.cov().values
+
+        mu = np.dot(w, p.T)
+        sigma = np.sqrt(np.dot(np.dot(w, C), w.T))
+
+        return mu, sigma
+
+    def generate_random_portfolios(self, n):
+        """Generates n random portfolio and returns array of mean returns and
+        standard deviations"""
+        return np.array([self.random_mu_sigma() for i in range(n)]).T
 
     def optimize(self):
         pass
