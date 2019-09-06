@@ -2,6 +2,8 @@ import numpy as np
 import os
 import quandl
 
+ROWS = 252 * 5 # number of prices rows to download
+
 try:
     quandl.ApiConfig.api_key = os.environ["QUANDL_API_KEY"]
 except:
@@ -15,7 +17,7 @@ class Portfolio:
 
     def __setattr__(self, name, value):
         if name == 'assets': # reload prices every time assets are setted
-            self.prices = self.load_prices(value)
+            self.prices = self.load_prices(value, rows=ROWS)
         super().__setattr__(name, value)
 
     @staticmethod
