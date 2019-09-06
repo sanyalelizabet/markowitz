@@ -10,6 +10,9 @@ dash = "*"
 dash-daq = "*"
 quandl = "*"
 python-dotenv = "*"
+jupyter = "*"
+matplotlib = "*"
+cvxopt = "*"
 
 [requires]
 python_version = "3.7"
