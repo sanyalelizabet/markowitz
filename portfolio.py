@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import os
 import quandl
 
@@ -47,6 +48,13 @@ class Portfolio:
         returns = self.returns + 1
         return returns.cumprod() * 100
 
+    @property
+    def mu_sigma(self):
+        mu = (1. + self.returns.mean().values)**252 - 1.
+        sigma = self.returns.std().values * np.sqrt(252)
+        df = pd.DataFrame({'mean': mu, 'std': sigma}, index=self.assets)
+        return df
+
     def random_weights(self):
         """Generate random weights for portfolio assets"""
         k = np.random.random(len(self.assets))
@@ -60,8 +68,8 @@ class Portfolio:
         w = self.random_weights()
         C = returns.cov().values
 
-        mu = np.dot(w, p.T)
-        sigma = np.sqrt(np.dot(np.dot(w, C), w.T))
+        mu = (1. + np.dot(w, p.T))**252 - 1.
+        sigma = np.sqrt(np.dot(np.dot(w, C), w.T) * 252)
 
         return mu, sigma
 

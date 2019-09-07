@@ -6,11 +6,12 @@ from unittest.mock import MagicMock
 from portfolio import Portfolio
 
 TICKERS = ['AMZN', 'FB', 'MSFT']
+N = 100
 port = Portfolio()
 port.load_prices = MagicMock(
     return_value=pd.DataFrame(
-        np.random.randn(100, len(TICKERS)),
-        range(100),
+        np.random.randn(N, len(TICKERS)),
+        range(N),
         TICKERS
     )
 )
@@ -25,6 +26,11 @@ class TestPortfolio(unittest.TestCase):
         self.assertListEqual(port.assets, TICKERS)
         self.assertEqual(port.prices.shape[1], len(TICKERS))
         self.assertIsNotNone(port.prices)
+
+    def test_mu_sigma(self):
+        port.assets = TICKERS
+        df = port.mu_sigma
+        self.assertEqual(df.shape, (len(TICKERS), 2))
 
     def test_random_weights(self):
         port.assets = TICKERS
