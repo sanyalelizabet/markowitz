@@ -10,6 +10,8 @@ from data import get_tickers_dict
 
 app = dash.Dash(__name__)
 
+server = app.server
+
 portfolio = Portfolio()
 
 app.layout = html.Div([
