@@ -17,7 +17,13 @@ class Portfolio:
 
     def __setattr__(self, name, value):
         if name == 'assets': # reload prices every time assets are setted
-            self.prices = self.load_prices(value, rows=ROWS)
+            try:
+                old_val = self.assets
+            except AttributeError:
+                pass
+            else:
+                if set(old_val) != set(value): # reload only if assets changed
+                    self.prices = self.load_prices(value, rows=ROWS)
         super().__setattr__(name, value)
 
     @staticmethod
