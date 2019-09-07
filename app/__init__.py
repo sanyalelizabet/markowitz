@@ -9,12 +9,19 @@ from app.portfolio import Portfolio
 from app.data import get_tickers_dict
 
 app = dash.Dash(__name__)
+
 portfolio = Portfolio()
 
-colors = {'background': '#333', 'text': '#7FDBFF'}
-
 app.layout = html.Div([
-    html.H1('Markowitz Portfolio Optimization'),
+    html.H1('Efficient frontier visualization'),
+    dcc.Slider(
+        id='simulations',
+        min=50,
+        max=500,
+        step=None,
+        marks={i: str(i) for i in range(50, 501, 50)},
+        value=100,
+    ),
     html.Div([
         html.Div([
             dcc.Dropdown(
@@ -23,52 +30,60 @@ app.layout = html.Div([
                 multi=True,
                 placeholder='Select assets for portfolio',
             )
-        ], style = {'width': '60%', 'display': 'table-cell'}),
+        ], style={'width': '60%', 'display': 'table-cell'}),
         html.Div([
             html.Button('Run optimization', id='button'),
-        ], style = {'width': '40%', 'display': 'table-cell'}),
-    ], style = {'width': '100%', 'height': '50px', 'display': 'table'}),
-    html.Div([
-        html.Div([
-            dcc.Graph(id='frontier'),
-        ]),
-        html.Div([
-            dcc.Graph(id='returns-chart'),
-        ]),
-    ], style={'columnCount': 2})
+        ], style={'width': '40%', 'display': 'table-cell'}),
+    ], style={
+        'width': '100%',
+        'height': '50px',
+        'display': 'table'
+    }),
+    dcc.Loading([
+        html.Div(
+            [html.Div(id='returns-chart'), html.Div(id='frontier-chart')],
+            style={'columnCount': 2}
+        )
+    ])
 ])
 
 
 @app.callback(
-    [Output('frontier', 'figure'), Output('returns-chart', 'figure')],
+    [
+        Output('frontier-chart', 'children'),
+        Output('returns-chart', 'children')
+    ],
     [Input('button', 'n_clicks')],
-    [State('selected', 'value')],
+    [State('selected', 'value'), State('simulations', 'value')],
 )
-def generate_returns_chart(n_clicks, value):
-    if not value:
-        return {}, {}
-    assets = value
-    portfolio.assets = assets
+def generate_returns_chart(n_clicks, selected, simulations):
+    if not selected:
+        return [], []
+    portfolio.assets = selected
     df = portfolio.cum_returns
-    means, stds = portfolio.generate_random_portfolios(500)
-    frontier_graph = {
-        'data': [
-            go.Scatter(y=means, x=stds, mode='markers', marker_size=5)
-        ],
-        'layout': {
-            'title': 'Efficient frontier'
-        }
-    }
-    returns_graph = {
-        'data': [
-            go.Scatter(y=df[asset].values, x=df[asset].index, name=asset)
-            for asset in assets
-        ],
-        'layout': {
-            'title': 'Returns',
-            'font': {
-                'color': '#fff',
-            }
-        }
-    }
+    means, stds = portfolio.generate_random_portfolios(simulations)
+    frontier_graph = [
+        dcc.Graph(
+            figure={
+                'data': [
+                    go.Scatter(y=means, x=stds, mode='markers', marker_size=5)
+                ],
+                'layout': {
+                    'title': 'Generated portfolios'
+                }
+            })
+    ]
+    returns_graph = [
+        dcc.Graph(
+            figure={
+                'data': [
+                    go.Scatter(
+                        y=df[asset].values, x=df[asset].index, name=asset)
+                    for asset in selected
+                ],
+                'layout': {
+                    'title': 'Historical returns',
+                }
+            })
+    ]
     return frontier_graph, returns_graph
