@@ -13,39 +13,73 @@ app = dash.Dash(__name__)
 portfolio = Portfolio()
 
 app.layout = html.Div([
-    html.H1('Efficient frontier visualization'),
-    dcc.Slider(
-        id='simulations',
-        min=50,
-        max=500,
-        step=None,
-        marks={i: str(i) for i in range(50, 501, 50)},
-        value=100,
+    html.H1(
+        'Efficient frontier visualization dashboard',
+        className='title has-text-centered',
     ),
     html.Div([
         html.Div([
-            dcc.Dropdown(
-                id='selected',
-                options=get_tickers_dict(),
-                multi=True,
-                placeholder='Select assets for portfolio',
-            )
-        ], style={'width': '60%', 'display': 'table-cell'}),
+            html.Div([
+                html.Label(
+                    'Asset universe',
+                    className='label'
+                ),
+                dcc.Dropdown(
+                    id='selected',
+                    options=get_tickers_dict(),
+                    multi=True,
+                    placeholder='Select several assets',
+                    className='control'
+                ),
+            ], className='field'),
+            html.Div([
+                html.Label(
+                    'Number of scenarios',
+                    className='label'
+                ),
+                dcc.Slider(
+                    id='simulations',
+                    min=100,
+                    max=1000,
+                    step=None,
+                    marks={i: str(i) for i in range(100, 1001, 100)},
+                    value=100,
+                    className='control'
+                ),
+            ], className='field'),
+            html.Div([
+                html.Div([
+                    html.Button(
+                        'Generate',
+                        id='button',
+                        className='button is-primary')
+                ], className='control'),
+            ], className='field'),
+        ], className='column'),
         html.Div([
-            html.Button('Run optimization', id='button'),
-        ], style={'width': '40%', 'display': 'table-cell'}),
-    ], style={
-        'width': '100%',
-        'height': '50px',
-        'display': 'table'
-    }),
+            html.Div([
+                dcc.Markdown('''
+                    This application generates n portfolios with random weights
+                    from a specified list of financial assets. For each
+                    portfolio expected return and standard deviation are being
+                    calculated and the resulting values are visualized on a
+                    graph.
+
+                    Historical adjusted close values are retrieved from Quandl.
+                ''', className='message-body')
+            ], className='message is-primary'),
+        ], className='column'),
+    ], className='columns'),
     dcc.Loading([
         html.Div(
-            [html.Div(id='returns-chart'), html.Div(id='frontier-chart')],
-            style={'columnCount': 2}
+            [
+                html.Div(id='returns-chart', className="column"),
+                html.Div(id='frontier-chart', className="column")
+            ],
+            className="columns"
         )
     ])
-])
+], className="container")
 
 
 @app.callback(
@@ -66,10 +100,18 @@ def generate_returns_chart(n_clicks, selected, simulations):
         dcc.Graph(
             figure={
                 'data': [
-                    go.Scatter(y=means, x=stds, mode='markers', marker_size=5)
+                    go.Scatter(
+                        x=stds,
+                        y=means,
+                        mode='markers',
+                        marker_size=5,
+                        name='Random',
+                    )
                 ],
                 'layout': {
-                    'title': 'Generated portfolios'
+                    'title': 'Generated portfolios',
+                    'xaxis': {'title': 'Standard deviation (ann.)'},
+                    'yaxis': {'title': 'Expected return (ann.)'},
                 }
             })
     ]
@@ -78,11 +120,16 @@ def generate_returns_chart(n_clicks, selected, simulations):
             figure={
                 'data': [
                     go.Scatter(
-                        y=df[asset].values, x=df[asset].index, name=asset)
+                        x=df[asset].index,
+                        y=df[asset].values,
+                        name=asset
+                    )
                     for asset in selected
                 ],
                 'layout': {
                     'title': 'Historical returns',
+                    'xaxis': {'title': 'Date'},
+                    'yaxis': {'title': 'Cumulative return (%)'},
                 }
             })
     ]
