@@ -4,8 +4,7 @@ import pandas as pd
 import pickle
 import requests
 
-APP_DIR = os.path.abspath(__name__)
-ROOT_DIR = os.path.dirname(APP_DIR)
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 TICKERS_FILE = os.path.join(ROOT_DIR, 'tickers.pickle')
 URL = 'https://datahub.io/core/s-and-p-500-companies/r/0.csv'
 

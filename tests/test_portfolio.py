@@ -3,7 +3,7 @@ import pandas as pd
 import unittest
 from unittest.mock import MagicMock
 
-from app.portfolio import Portfolio
+from portfolio import Portfolio
 
 TICKERS = ['AMZN', 'FB', 'MSFT']
 port = Portfolio()
@@ -19,7 +19,6 @@ port.load_prices = MagicMock(
 class TestPortfolio(unittest.TestCase):
     def test_blank(self):
         self.assertListEqual(port.assets, [])
-        self.assertIsNone(port.prices, [])
 
     def test_setting(self):
         port.assets = TICKERS

@@ -5,8 +5,8 @@ import dash_html_components as html
 from dash.dependencies import Output, Input, State
 import plotly.graph_objs as go
 
-from app.portfolio import Portfolio
-from app.data import get_tickers_dict
+from portfolio import Portfolio
+from data import get_tickers_dict
 
 app = dash.Dash(__name__)
 
@@ -87,3 +87,7 @@ def generate_returns_chart(n_clicks, selected, simulations):
             })
     ]
     return frontier_graph, returns_graph
+
+
+if __name__ == '__main__':
+    app.run_server(debug=True)
