@@ -3,80 +3,45 @@ import pandas as pd
 import os
 import quandl
 
-ROWS = 252 * 5 # number of prices rows to download
-
-try:
-    quandl.ApiConfig.api_key = os.environ["QUANDL_API_KEY"]
-except:
-    raise Exception("Need to set QUANDL_API_KEY envirnoment variable")
+from .dataframe import Data
 
 
 class Portfolio:
     """Portfolio of assets"""
-    def __init__(self, assets=None):
+    def __init__(self, assets=None, weights=None):
         self.assets = assets or []
+        self.weights = weights
 
-    def __setattr__(self, name, value):
-        if name == 'assets': # reload prices every time assets are setted
-            try:
-                old_val = self.assets
-            except AttributeError:
-                pass
-            else:
-                if set(old_val) != set(value): # reload only if assets changed
-                    self.prices = self.load_prices(value, rows=ROWS)
-        super().__setattr__(name, value)
-
-    @staticmethod
-    def load_prices(assets, **kwargs):
-        """Download historical prices from Quandl"""
-        if not assets:
-            return None
-        df = quandl.get(
-            [f'WIKI/{asset}.11' for asset in assets],
-            **kwargs
-        )
-        df.columns = assets
-        return df.dropna()
-
-    @property
-    def returns(self):
-        return self.prices.pct_change().dropna()
-
-    @property
-    def cum_returns(self):
-        returns = self.returns + 1
-        return returns.cumprod() * 100
-
-    @property
-    def mu_sigma(self):
-        mu = (1. + self.returns.mean().values)**252 - 1.
-        sigma = self.returns.std().values * np.sqrt(252)
-        df = pd.DataFrame({'mean': mu, 'std': sigma}, index=self.assets)
-        return df
-
-    def random_weights(self):
+    def set_random_weights(self, n):
         """Generate random weights for portfolio assets"""
         k = np.random.random(len(self.assets))
-        return k / sum(k)
+        self.weights =  k / sum(k)
 
-    def random_mu_sigma(self):
-        """Calculate mu and sigma for portfolio with random weights"""
-        returns = self.returns
+    def calculate_mean(self, returns):
+        """Calculates expected return (ann.) of current portfolio"""
+        returns = returns.mean().values
+        return (1. + np.dot(self.weights, returns.T))**252 - 1.
 
-        p = returns.mean().values
-        w = self.random_weights()
+    def calculate_std(self, returns):
+        """Calculates standard deviation (ann.) of current portfolio"""
         C = returns.cov().values
+        return np.sqrt(np.dot(np.dot(self.weights, C), self.weights.T) * 252)
 
-        mu = (1. + np.dot(w, p.T))**252 - 1.
-        sigma = np.sqrt(np.dot(np.dot(w, C), w.T) * 252)
+    def calculate_ratios(self, returns):
+        """Calculate exp_return, std, sharpe_ratio"""
+        self.mu = self.calculate_mean(returns)
+        self.std = self.calculate_std(returns)
+        self.sharpe = self.mu / self.std
 
-        return mu, sigma
-
-    def generate_random_portfolios(self, n):
+    @classmethod
+    def random_portfolios(cls, assets, n, returns=None):
         """Generates n random portfolio and returns array of mean returns and
         standard deviations"""
-        return np.array([self.random_mu_sigma() for i in range(n)]).T
-
-    def optimize(self):
-        pass
+        i = 0
+        while i < n:
+            portfolio = cls(assets=assets)
+            portfolio.set_random_weights()
+            if returns:
+                portfolio.calculate_ratios()
+            yield portfolio
+            i += 1
